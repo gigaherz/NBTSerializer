@@ -1,8 +1,8 @@
 package gigaherz.util.nbt.serialization.mappers;
 
 import gigaherz.util.nbt.serialization.NBTSerializer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraftforge.common.util.Constants;
 import org.apache.commons.lang3.SerializationException;
 
@@ -29,64 +29,62 @@ public class MapMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object)
+    public void serializeField(CompoundNBT parent, String fieldName, Object object)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = new NBTTagCompound();
-        serializeMap(tag2, (Map) object);
-        parent.setTag(fieldName, tag2);
+        parent.put(fieldName, serializeMap((Map) object));
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz)
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = (NBTTagCompound) parent.getTag(fieldName);
+        CompoundNBT tag2 = (CompoundNBT) parent.get(fieldName);
         return deserializeMap(tag2, (Class<? extends Map>) clazz);
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object)
+    public CompoundNBT serializeCompound(Object object)
             throws ReflectiveOperationException
     {
-        serializeMap(self, (Map) object);
+        return serializeMap((Map) object);
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz)
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz)
             throws ReflectiveOperationException
     {
         return deserializeMap(self, (Class<? extends Map>) clazz);
     }
 
-    private void serializeMap(NBTTagCompound tag, Map<Object, Object> m)
+    private CompoundNBT serializeMap(Map<Object, Object> m)
             throws ReflectiveOperationException
     {
-        tag.setString("type", "map");
-        tag.setString("className", m.getClass().getName());
+        CompoundNBT tag = getTypeCompound(m, "map");
 
-        NBTTagList list = new NBTTagList();
+        ListNBT list = new ListNBT();
         for (Map.Entry e : m.entrySet())
         {
-            NBTTagCompound tag2 = new NBTTagCompound();
+            CompoundNBT tag2 = new CompoundNBT();
             Object key = e.getKey();
             Object value = e.getValue();
             if (key != null)
             {
-                NBTSerializer.serializeToField(tag2, "keyClass", key.getClass().getName());
-                NBTSerializer.serializeToField(tag2, "key", key);
+                NBTSerializer.serializeTo(tag2, "keyClass", key.getClass().getName());
+                NBTSerializer.serializeTo(tag2, "key", key);
             }
             if (value != null)
             {
-                NBTSerializer.serializeToField(tag2, "valueClass", value.getClass().getName());
-                NBTSerializer.serializeToField(tag2, "value", value);
+                NBTSerializer.serializeTo(tag2, "valueClass", value.getClass().getName());
+                NBTSerializer.serializeTo(tag2, "value", value);
             }
-            list.appendTag(tag2);
+            list.add(tag2);
         }
-        tag.setTag("elements", list);
+        tag.put("elements", list);
+        return tag;
     }
 
-    private Map deserializeMap(NBTTagCompound tag, Class<? extends Map> clazz)
+    private Map deserializeMap(CompoundNBT tag, Class<? extends Map> clazz)
             throws ReflectiveOperationException
     {
         if (!tag.getString("type").equals("map"))
@@ -98,25 +96,25 @@ public class MapMapper extends MapperBase
 
         Map m = (Map) actual.newInstance();
 
-        NBTTagList list = tag.getTagList("elements", Constants.NBT.TAG_COMPOUND);
-        for (int ii = 0; ii < list.tagCount(); ii++)
+        ListNBT list = tag.getList("elements", Constants.NBT.TAG_COMPOUND);
+        for (int ii = 0; ii < list.size(); ii++)
         {
-            NBTTagCompound tag2 = (NBTTagCompound) list.get(ii);
+            CompoundNBT tag2 = (CompoundNBT) list.get(ii);
 
             Object key = null;
             Object value = null;
 
-            if (tag2.hasKey("key"))
+            if (tag2.contains("key"))
             {
                 Class<?> clsk = Class.forName(tag2.getString("keyClass"));
-                key = NBTSerializer.deserializeToField(tag2, "key", clsk, null);
+                key = NBTSerializer.deserializeFrom(tag2, "key", clsk, null);
             }
 
 
-            if (tag2.hasKey("value"))
+            if (tag2.contains("value"))
             {
                 Class<?> cls = Class.forName(tag2.getString("valueClass"));
-                value = NBTSerializer.deserializeToField(tag2, "value", cls, null);
+                value = NBTSerializer.deserializeFrom(tag2, "value", cls, null);
             }
 
             m.put(key, value);

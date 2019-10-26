@@ -1,8 +1,7 @@
 package gigaherz.util.nbt.serialization.mappers;
 
-import gigaherz.util.nbt.serialization.ICustomNBTSerializable;
 import gigaherz.util.nbt.serialization.NBTSerializer;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import org.apache.commons.lang3.SerializationException;
 
 import java.lang.reflect.Field;
@@ -28,49 +27,42 @@ public class GenericObjectMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object) throws ReflectiveOperationException
+    public void serializeField(CompoundNBT parent, String fieldName, Object object) throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = new NBTTagCompound();
-        serializeObject(tag2, object);
-        parent.setTag(fieldName, tag2);
+        CompoundNBT tag2 = serializeObject(object);
+        parent.put(fieldName, tag2);
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = (NBTTagCompound) parent.getTag(fieldName);
+        CompoundNBT tag2 = (CompoundNBT) parent.get(fieldName);
         return deserializeObject(tag2, clazz);
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object) throws ReflectiveOperationException
+    public CompoundNBT serializeCompound(Object object) throws ReflectiveOperationException
     {
-        serializeObject(self, object);
+        return serializeObject(object);
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz) throws ReflectiveOperationException
     {
         return deserializeObject(self, clazz);
     }
 
-    private void serializeObject(NBTTagCompound tag, Object o)
+    private CompoundNBT serializeObject(Object o)
             throws ReflectiveOperationException
     {
         if (o == null)
         {
-            tag.setString("type", "null");
-            return;
+            CompoundNBT tag = new CompoundNBT();
+            tag.putString("type", "null");
+            return tag;
         }
 
-        if (o instanceof ICustomNBTSerializable)
-        {
-            ((ICustomNBTSerializable) o).writeToNBT(tag);
-            return;
-        }
-
-        tag.setString("type", "object");
-        tag.setString("className", o.getClass().getName());
+        CompoundNBT tag = getTypeCompound(o, "object");
 
         Class<?> cls = o.getClass();
 
@@ -84,23 +76,18 @@ public class GenericObjectMapper extends MapperBase
                     continue;
 
                 f.setAccessible(true);
-                NBTSerializer.serializeToField(tag, f.getName(), f.get(o));
+                NBTSerializer.serializeTo(tag, f.getName(), f.get(o));
             }
 
             cls = cls.getSuperclass();
         }
+
+        return tag;
     }
 
-    private Object deserializeObject(NBTTagCompound tag, Class<?> clazz)
+    private Object deserializeObject(CompoundNBT tag, Class<?> clazz)
             throws ReflectiveOperationException
     {
-        if (ICustomNBTSerializable.class.isAssignableFrom(clazz))
-        {
-            Object o = clazz.newInstance();
-            ((ICustomNBTSerializable) o).readFromNBT(tag);
-            return o;
-        }
-
         if (tag.getString("type").equals("null"))
             return null;
 
@@ -125,7 +112,7 @@ public class GenericObjectMapper extends MapperBase
                     continue;
 
                 f.setAccessible(true);
-                f.set(o, NBTSerializer.deserializeToField(tag, f.getName(), f.getType(), f.get(o)));
+                f.set(o, NBTSerializer.deserializeFrom(tag, f.getName(), f.getType(), f.get(o)));
             }
 
             cls = cls.getSuperclass();

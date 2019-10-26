@@ -1,8 +1,8 @@
 package gigaherz.util.nbt.serialization.mappers;
 
 import gigaherz.util.nbt.serialization.NBTSerializer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraftforge.common.util.Constants;
 import org.apache.commons.lang3.SerializationException;
 
@@ -29,59 +29,57 @@ public class ListMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object)
+    public void serializeField(CompoundNBT parent, String fieldName, Object object)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = new NBTTagCompound();
-        serializeList(tag2, (List) object);
-        parent.setTag(fieldName, tag2);
+        parent.put(fieldName, serializeList((List) object));
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz)
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = (NBTTagCompound) parent.getTag(fieldName);
+        CompoundNBT tag2 = (CompoundNBT) parent.get(fieldName);
         return deserializeList(tag2, (Class<? extends List>) clazz);
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object)
+    public CompoundNBT serializeCompound(Object object)
             throws ReflectiveOperationException
     {
-        serializeList(self, (List) object);
+        return serializeList((List) object);
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz)
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz)
             throws ReflectiveOperationException
     {
         return deserializeList(self, (Class<? extends List>) clazz);
     }
 
-    private void serializeList(NBTTagCompound tag, List l)
+    private CompoundNBT serializeList(List l)
             throws ReflectiveOperationException
     {
-        tag.setString("type", "list");
-        tag.setString("className", l.getClass().getName());
+        CompoundNBT tag = getTypeCompound(l, "list");
 
-        NBTTagList list = new NBTTagList();
+        ListNBT list = new ListNBT();
         for (int ii = 0; ii < l.size(); ii++)
         {
             Object o = l.get(ii);
-            NBTTagCompound tag2 = new NBTTagCompound();
-            tag2.setInteger("index", ii);
+            CompoundNBT tag2 = new CompoundNBT();
+            tag2.putInt("index", ii);
             if (o != null)
             {
-                NBTSerializer.serializeToField(tag2, "valueClass", o.getClass().getName());
-                NBTSerializer.serializeToField(tag2, "value", o);
+                NBTSerializer.serializeTo(tag2, "valueClass", o.getClass().getName());
+                NBTSerializer.serializeTo(tag2, "value", o);
             }
-            list.appendTag(tag2);
+            list.add(tag2);
         }
-        tag.setTag("elements", list);
+        tag.put("elements", list);
+        return tag;
     }
 
-    private List deserializeList(NBTTagCompound tag, Class<? extends List> clazz)
+    private List deserializeList(CompoundNBT tag, Class<? extends List> clazz)
             throws ReflectiveOperationException
     {
         if (!tag.getString("type").equals("list"))
@@ -93,26 +91,26 @@ public class ListMapper extends MapperBase
 
         List l = (List) actual.newInstance();
 
-        NBTTagList list = tag.getTagList("elements", Constants.NBT.TAG_COMPOUND);
+        ListNBT list = tag.getList("elements", Constants.NBT.TAG_COMPOUND);
 
-        for (int ii = 0; ii < list.tagCount(); ii++)
+        for (int ii = 0; ii < list.size(); ii++)
         {
             l.add(null);
         }
 
-        for (int ii = 0; ii < list.tagCount(); ii++)
+        for (int ii = 0; ii < list.size(); ii++)
         {
-            NBTTagCompound tag2 = (NBTTagCompound) list.get(ii);
+            CompoundNBT tag2 = (CompoundNBT) list.get(ii);
 
-            int index = tag2.getInteger("index");
+            int index = tag2.getInt("index");
 
-            if (!tag2.hasKey("value"))
+            if (!tag2.contains("value"))
             {
                 continue;
             }
 
             Class<?> cls = Class.forName(tag2.getString("valueClass"));
-            Object value = NBTSerializer.deserializeToField(tag2, "value", cls, null);
+            Object value = NBTSerializer.deserializeFrom(tag2, "value", cls, null);
 
             l.set(index, value);
         }

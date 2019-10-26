@@ -1,7 +1,7 @@
 package gigaherz.util.nbt.serialization.mappers;
 
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 
 public class TagMapper extends MapperBase
 {
@@ -13,36 +13,46 @@ public class TagMapper extends MapperBase
     @Override
     public boolean canMapToField(Class<?> clazz)
     {
-        return NBTBase.class.isAssignableFrom(clazz);
+        return INBT.class.isAssignableFrom(clazz);
     }
 
     @Override
     public boolean canMapToCompound(Class<?> clazz)
     {
-        return false;
+        return INBT.class.isAssignableFrom(clazz);
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object) throws ReflectiveOperationException
+    public void serializeField(CompoundNBT parent, String fieldName, Object object) throws ReflectiveOperationException
     {
-        parent.setTag(fieldName, ((NBTBase) object).copy());
+        parent.put(fieldName, ((INBT) object).copy());
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
     {
-        return parent.getTag(fieldName).copy();
+        return parent.get(fieldName).copy();
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object) throws ReflectiveOperationException
+    public CompoundNBT serializeCompound(Object object) throws ReflectiveOperationException
     {
+        INBT obj = (INBT)object;
+        if (obj instanceof CompoundNBT)
+            return (CompoundNBT)obj;
 
+        CompoundNBT tag = new CompoundNBT();
+        tag.putString("type", "compound");
+        tag.put("value", obj);
+        return tag;
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeCompound(CompoundNBT tag, Class<?> clazz) throws ReflectiveOperationException
     {
-        return null;
+        if (tag.getString("type").equals("compound"))
+            return tag.get("value");
+
+        return tag;
     }
 }

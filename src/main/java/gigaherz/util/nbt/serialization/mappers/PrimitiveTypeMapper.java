@@ -1,7 +1,7 @@
 package gigaherz.util.nbt.serialization.mappers;
 
 import com.google.common.primitives.Primitives;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 
 public class PrimitiveTypeMapper extends MapperBase
 {
@@ -23,44 +23,44 @@ public class PrimitiveTypeMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object) throws ReflectiveOperationException
+    public void serializeField(CompoundNBT parent, String fieldName, Object object) throws ReflectiveOperationException
     {
         if (object instanceof Byte)
         {
-            parent.setByte(fieldName, (Byte) object);
+            parent.putByte(fieldName, (Byte) object);
         }
         else if (object instanceof Short)
         {
-            parent.setShort(fieldName, (Short) object);
+            parent.putShort(fieldName, (Short) object);
         }
         else if (object instanceof Integer)
         {
-            parent.setInteger(fieldName, (Integer) object);
+            parent.putInt(fieldName, (Integer) object);
         }
         else if (object instanceof Long)
         {
-            parent.setLong(fieldName, (Long) object);
+            parent.putLong(fieldName, (Long) object);
         }
         else if (object instanceof Float)
         {
-            parent.setFloat(fieldName, (Float) object);
+            parent.putFloat(fieldName, (Float) object);
         }
         else if (object instanceof Double)
         {
-            parent.setDouble(fieldName, (Double) object);
+            parent.putDouble(fieldName, (Double) object);
         }
         else if (object instanceof Boolean)
         {
-            parent.setBoolean(fieldName, (Boolean) object);
+            parent.putBoolean(fieldName, (Boolean) object);
         }
         else if (object instanceof Character)
         {
-            parent.setInteger(fieldName, (Character) object);
+            parent.putInt(fieldName, (Character) object);
         }
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
     {
         if (clazz == Byte.class || clazz == byte.class)
         {
@@ -72,7 +72,7 @@ public class PrimitiveTypeMapper extends MapperBase
         }
         else if (clazz == Integer.class || clazz == int.class)
         {
-            return parent.getInteger(fieldName);
+            return parent.getInt(fieldName);
         }
         else if (clazz == Long.class || clazz == long.class)
         {
@@ -92,18 +92,19 @@ public class PrimitiveTypeMapper extends MapperBase
         }
         else if (clazz == Character.class || clazz == char.class)
         {
-            return parent.getInteger(fieldName);
+            return parent.getInt(fieldName);
         }
         return null;
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object) throws ReflectiveOperationException
+    public CompoundNBT serializeCompound(Object object) throws ReflectiveOperationException
     {
+        return null;
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz) throws ReflectiveOperationException
     {
         return null;
     }

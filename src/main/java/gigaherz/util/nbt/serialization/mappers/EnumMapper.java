@@ -1,6 +1,6 @@
 package gigaherz.util.nbt.serialization.mappers;
 
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import org.apache.commons.lang3.SerializationException;
 
 @SuppressWarnings("unchecked")
@@ -24,43 +24,44 @@ public class EnumMapper extends MapperBase
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object)
-            throws ReflectiveOperationException
-    {
-    }
-
-    @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz)
+    public CompoundNBT serializeCompound(Object object)
             throws ReflectiveOperationException
     {
         return null;
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object)
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = new NBTTagCompound();
-        serializeEnum(tag2, ((Enum) object));
-        parent.setTag(fieldName, tag2);
+        return null;
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz)
+    public void serializeField(CompoundNBT parent, String fieldName, Object object)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = (NBTTagCompound) parent.getTag(fieldName);
+        CompoundNBT tag2 = new CompoundNBT();
+        serializeEnum(tag2, ((Enum) object));
+        parent.put(fieldName, tag2);
+    }
+
+    @Override
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz)
+            throws ReflectiveOperationException
+    {
+        CompoundNBT tag2 = (CompoundNBT) parent.get(fieldName);
         return deserializeEnum(tag2, (Class<? extends Enum>) clazz);
     }
 
-    private static void serializeEnum(NBTTagCompound tag, Enum o)
+    private static void serializeEnum(CompoundNBT tag, Enum o)
     {
-        tag.setString("type", "enum");
-        tag.setString("className", o.getClass().getName());
-        tag.setString("valueName", o.name());
+        tag.putString("type", "enum");
+        tag.putString("className", o.getClass().getName());
+        tag.putString("valueName", o.name());
     }
 
-    private static Object deserializeEnum(NBTTagCompound tag, Class<? extends Enum> clazz)
+    private static Object deserializeEnum(CompoundNBT tag, Class<? extends Enum> clazz)
     {
         if (!tag.getString("type").equals("enum"))
             throw new SerializationException();

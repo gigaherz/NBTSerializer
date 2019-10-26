@@ -1,6 +1,6 @@
 package gigaherz.util.nbt.serialization.mappers;
 
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 
 public class StringMapper extends MapperBase
 {
@@ -22,25 +22,25 @@ public class StringMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object) throws ReflectiveOperationException
+    public void serializeField(CompoundNBT parent, String fieldName, Object object) throws ReflectiveOperationException
     {
-        parent.setString(fieldName, (String) object);
+        parent.putString(fieldName, (String) object);
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz) throws ReflectiveOperationException
     {
         return parent.getString(fieldName);
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object) throws ReflectiveOperationException
+    public CompoundNBT serializeCompound(Object object) throws ReflectiveOperationException
     {
-
+        return null;
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz) throws ReflectiveOperationException
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz) throws ReflectiveOperationException
     {
         return null;
     }

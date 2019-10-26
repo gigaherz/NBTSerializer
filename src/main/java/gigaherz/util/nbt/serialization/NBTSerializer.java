@@ -1,7 +1,7 @@
 package gigaherz.util.nbt.serialization;
 
 import gigaherz.util.nbt.serialization.mappers.*;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,15 +79,7 @@ public class NBTSerializer
 
     // ==============================================================================================================
     // Serializing
-    public static NBTTagCompound serialize(Object o)
-            throws ReflectiveOperationException
-    {
-        NBTTagCompound tag = new NBTTagCompound();
-        serializeToCompound(tag, o);
-        return tag;
-    }
-
-    public static void serializeToField(NBTTagCompound tag, String fieldName, Object object)
+    public static void serializeTo(CompoundNBT tag, String fieldName, Object object)
             throws ReflectiveOperationException
     {
         if (object != null)
@@ -103,7 +95,7 @@ public class NBTSerializer
         generic.serializeField(tag, fieldName, object);
     }
 
-    public static void serializeToCompound(NBTTagCompound tag, Object object)
+    public static CompoundNBT serialize(Object object)
             throws ReflectiveOperationException
     {
         if (object != null)
@@ -111,26 +103,31 @@ public class NBTSerializer
             MapperBase mapper = findTopCompoundMapperForClass(object.getClass());
             if (mapper != null)
             {
-                mapper.serializeCompound(tag, object);
-                return;
+                return mapper.serializeCompound(object);
             }
         }
 
-        generic.serializeCompound(tag, object);
+        return generic.serializeCompound(object);
     }
 
     // ==============================================================================================================
     // Deserializing
-    public static <T> T deserialize(Class<? extends T> clazz, NBTTagCompound tag)
+    public static <T> T deserialize(Class<? extends T> clazz, CompoundNBT tag)
             throws ReflectiveOperationException
     {
-        return (T) deserializeToCompound(tag, clazz);
+        MapperBase mapper = findTopCompoundMapperForClass(clazz);
+        if (mapper != null)
+        {
+            return (T)mapper.deserializeCompound(tag, clazz);
+        }
+
+        return (T)generic.deserializeCompound(tag, clazz);
     }
 
-    public static Object deserializeToField(NBTTagCompound parent, String fieldName, Class<?> clazz, Object currentValue)
+    public static Object deserializeFrom(CompoundNBT parent, String fieldName, Class<?> clazz, Object currentValue)
             throws ReflectiveOperationException
     {
-        if (!parent.hasKey(fieldName))
+        if (!parent.contains(fieldName))
             return currentValue;
 
         MapperBase mapper = findTopFieldMapperForClass(clazz);
@@ -141,17 +138,4 @@ public class NBTSerializer
 
         return generic.deserializeField(parent, fieldName, clazz);
     }
-
-    public static Object deserializeToCompound(NBTTagCompound self, Class<?> clazz)
-            throws ReflectiveOperationException
-    {
-        MapperBase mapper = findTopCompoundMapperForClass(clazz);
-        if (mapper != null)
-        {
-            return mapper.deserializeCompound(self, clazz);
-        }
-
-        return generic.deserializeCompound(self, clazz);
-    }
-
 }

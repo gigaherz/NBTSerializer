@@ -1,8 +1,8 @@
 package gigaherz.util.nbt.serialization.tests;
 
-import gigaherz.util.nbt.serialization.ICustomNBTSerializable;
 import gigaherz.util.nbt.serialization.NBTSerializer;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraftforge.common.util.INBTSerializable;
 import org.apache.commons.lang3.SerializationException;
 
 import java.util.*;
@@ -21,15 +21,15 @@ public class NBTSerializerTests
     {
         try
         {
-            testSerialize(null, "{type:\"null\",}");
-            testSerialize(new TestSingleByte().prepare(), "{value1:10b,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleByte\",type:\"object\",}");
-            testSerialize(new TestSingleShort().prepare(), "{value1:10s,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleShort\",type:\"object\",}");
-            testSerialize(new TestSingleInt().prepare(), "{value1:10,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleInt\",type:\"object\",}");
-            testSerialize(new TestSingleLong().prepare(), "{value1:10L,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleLong\",type:\"object\",}");
-            testSerialize(new TestSingleFloat().prepare(), "{value1:10.0f,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleFloat\",type:\"object\",}");
-            testSerialize(new TestSingleDouble().prepare(), "{value1:10.0d,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleDouble\",type:\"object\",}");
-            testSerialize(new TestSingleBoolean().prepare(), "{value1:1b,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleBoolean\",type:\"object\",}");
-            testSerialize(new TestString().prepare(), "{value1:\"Test8\",className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestString\",type:\"object\",}");
+            testSerialize(null, "{type:\"null\"}");
+            testSerialize(new TestSingleByte().prepare(), "{value1:10b,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleByte\",type:\"object\"}");
+            testSerialize(new TestSingleShort().prepare(), "{value1:10s,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleShort\",type:\"object\"}");
+            testSerialize(new TestSingleInt().prepare(), "{value1:10,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleInt\",type:\"object\"}");
+            testSerialize(new TestSingleLong().prepare(), "{value1:10L,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleLong\",type:\"object\"}");
+            testSerialize(new TestSingleFloat().prepare(), "{value1:10.0f,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleFloat\",type:\"object\"}");
+            testSerialize(new TestSingleDouble().prepare(), "{value1:10.0d,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleDouble\",type:\"object\"}");
+            testSerialize(new TestSingleBoolean().prepare(), "{value1:1b,className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestSingleBoolean\",type:\"object\"}");
+            testSerialize(new TestString().prepare(), "{value1:\"Test8\",className:\"gigaherz.util.nbt.serialization.tests.NBTSerializerTests$TestString\",type:\"object\"}");
 
             testRoundTrip(new TestSingleByte().prepare());
             testRoundTrip(new TestSingleShort().prepare());
@@ -60,7 +60,7 @@ public class NBTSerializerTests
 
     private static void testSerialize(Object o, String expected) throws TestException
     {
-        NBTTagCompound serialized;
+        CompoundNBT serialized;
 
         System.out.println("Test Serialize " + (o != null ? o.getClass().getName() : "(null)"));
 
@@ -85,7 +85,7 @@ public class NBTSerializerTests
 
     private static void testRoundTrip(Object o) throws TestException
     {
-        NBTTagCompound serialized;
+        CompoundNBT serialized;
 
         System.out.println("Test Round Trip " + (o != null ? o.getClass().getName() : "(null)"));
 
@@ -243,7 +243,7 @@ public class NBTSerializerTests
         }
     }
 
-    public static class TestCustomSerializable extends AbstractTest implements ICustomNBTSerializable
+    public static class TestCustomSerializable extends AbstractTest implements INBTSerializable<CompoundNBT>
     {
         String value1 = "Test8";
 
@@ -257,13 +257,15 @@ public class NBTSerializerTests
         }
 
         @Override
-        public void writeToNBT(NBTTagCompound tag)
+        public CompoundNBT serializeNBT()
         {
-            tag.setString("custom1", value1);
+            CompoundNBT tag = new CompoundNBT();
+            tag.putString("custom1", value1);
+            return tag;
         }
 
         @Override
-        public void readFromNBT(NBTTagCompound tag)
+        public void deserializeNBT(CompoundNBT tag)
         {
             value1 = tag.getString("custom1");
         }

@@ -1,8 +1,8 @@
 package gigaherz.util.nbt.serialization.mappers;
 
 import gigaherz.util.nbt.serialization.NBTSerializer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraftforge.common.util.Constants;
 import org.apache.commons.lang3.SerializationException;
 
@@ -29,57 +29,55 @@ public class SetMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object)
+    public void serializeField(CompoundNBT parent, String fieldName, Object object)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = new NBTTagCompound();
-        serializeSet(tag2, (Set) object);
-        parent.setTag(fieldName, tag2);
+        parent.put(fieldName, serializeSet((Set) object));
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz)
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = (NBTTagCompound) parent.getTag(fieldName);
+        CompoundNBT tag2 = (CompoundNBT) parent.get(fieldName);
         return deserializeSet(tag2, (Class<? extends Set>) clazz);
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object)
+    public CompoundNBT serializeCompound(Object object)
             throws ReflectiveOperationException
     {
-        serializeSet(self, (Set) object);
+        return serializeSet((Set) object);
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz)
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz)
             throws ReflectiveOperationException
     {
         return deserializeSet(self, (Class<? extends Set>) clazz);
     }
 
-    private void serializeSet(NBTTagCompound tag, Set s)
+    private CompoundNBT serializeSet(Set s)
             throws ReflectiveOperationException
     {
-        tag.setString("type", "set");
-        tag.setString("className", s.getClass().getName());
+        CompoundNBT tag = getTypeCompound(s, "set");
 
-        NBTTagList list = new NBTTagList();
+        ListNBT list = new ListNBT();
         for (Object o : s)
         {
-            NBTTagCompound tag2 = new NBTTagCompound();
+            CompoundNBT tag2 = new CompoundNBT();
             if (o != null)
             {
-                NBTSerializer.serializeToField(tag2, "valueClass", o.getClass().getName());
-                NBTSerializer.serializeToField(tag2, "value", o);
+                NBTSerializer.serializeTo(tag2, "valueClass", o.getClass().getName());
+                NBTSerializer.serializeTo(tag2, "value", o);
             }
-            list.appendTag(tag2);
+            list.add(tag2);
         }
-        tag.setTag("elements", list);
+        tag.put("elements", list);
+        return tag;
     }
 
-    private Set deserializeSet(NBTTagCompound tag, Class<? extends Set> clazz)
+    private Set deserializeSet(CompoundNBT tag, Class<? extends Set> clazz)
             throws ReflectiveOperationException
     {
         if (!tag.getString("type").equals("set"))
@@ -91,16 +89,16 @@ public class SetMapper extends MapperBase
 
         Set s = (Set) actual.newInstance();
 
-        NBTTagList list = tag.getTagList("elements", Constants.NBT.TAG_COMPOUND);
-        for (int ii = 0; ii < list.tagCount(); ii++)
+        ListNBT list = tag.getList("elements", Constants.NBT.TAG_COMPOUND);
+        for (int ii = 0; ii < list.size(); ii++)
         {
-            NBTTagCompound tag2 = (NBTTagCompound) list.get(ii);
+            CompoundNBT tag2 = (CompoundNBT) list.get(ii);
 
             Object value = null;
-            if (tag2.hasKey("value"))
+            if (tag2.contains("value"))
             {
                 Class<?> cls = Class.forName(tag2.getString("valueClass"));
-                value = NBTSerializer.deserializeToField(tag2, "value", cls, null);
+                value = NBTSerializer.deserializeFrom(tag2, "value", cls, null);
             }
 
             s.add(value);

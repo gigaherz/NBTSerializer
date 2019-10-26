@@ -1,8 +1,8 @@
 package gigaherz.util.nbt.serialization.mappers;
 
 import gigaherz.util.nbt.serialization.NBTSerializer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraftforge.common.util.Constants;
 import org.apache.commons.lang3.SerializationException;
 
@@ -28,81 +28,79 @@ public class ArrayMapper extends MapperBase
     }
 
     @Override
-    public void serializeField(NBTTagCompound parent, String fieldName, Object object)
+    public void serializeField(CompoundNBT parent, String fieldName, Object object)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = new NBTTagCompound();
-        serializeArray(tag2, object);
-        parent.setTag(fieldName, tag2);
+        parent.put(fieldName, serializeArray(object));
     }
 
     @Override
-    public Object deserializeField(NBTTagCompound parent, String fieldName, Class<?> clazz)
+    public Object deserializeField(CompoundNBT parent, String fieldName, Class<?> clazz)
             throws ReflectiveOperationException
     {
-        NBTTagCompound tag2 = (NBTTagCompound) parent.getTag(fieldName);
+        CompoundNBT tag2 = (CompoundNBT) parent.get(fieldName);
         return deserializeArray(tag2, clazz);
     }
 
     @Override
-    public void serializeCompound(NBTTagCompound self, Object object)
+    public CompoundNBT serializeCompound(Object object)
             throws ReflectiveOperationException
     {
-        serializeArray(self, object);
+        return serializeArray(object);
     }
 
     @Override
-    public Object deserializeCompound(NBTTagCompound self, Class<?> clazz)
+    public Object deserializeCompound(CompoundNBT self, Class<?> clazz)
             throws ReflectiveOperationException
     {
         return deserializeArray(self, clazz);
     }
 
-    private void serializeArray(NBTTagCompound tag, Object a)
+    private CompoundNBT serializeArray(Object a)
             throws ReflectiveOperationException
     {
-        tag.setString("type", "array");
-        tag.setString("className", a.getClass().getName());
+        CompoundNBT tag = getTypeCompound(a, "array");
 
-        NBTTagList list = new NBTTagList();
+        ListNBT list = new ListNBT();
         for (int ii = 0; ii < Array.getLength(a); ii++)
         {
             Object o = Array.get(a, ii);
-            NBTTagCompound tag2 = new NBTTagCompound();
-            tag2.setInteger("index", ii);
+            CompoundNBT tag2 = new CompoundNBT();
+            tag2.putInt("index", ii);
             if (o != null)
             {
-                NBTSerializer.serializeToField(tag2, "valueClass", o.getClass().getName());
-                NBTSerializer.serializeToField(tag2, "value", o);
+                NBTSerializer.serializeTo(tag2, "valueClass", o.getClass().getName());
+                NBTSerializer.serializeTo(tag2, "value", o);
             }
-            list.appendTag(tag2);
+            list.add(tag2);
         }
-        tag.setTag("elements", list);
+        tag.put("elements", list);
+        return tag;
     }
 
-    private Object deserializeArray(NBTTagCompound tag, Class<?> clazz)
+    private Object deserializeArray(CompoundNBT tag, Class<?> clazz)
             throws ReflectiveOperationException
     {
         if (!tag.getString("type").equals("array"))
             throw new SerializationException();
 
-        NBTTagList list = tag.getTagList("elements", Constants.NBT.TAG_COMPOUND);
+        ListNBT list = tag.getList("elements", Constants.NBT.TAG_COMPOUND);
 
-        Object o = Array.newInstance(clazz.getComponentType(), list.tagCount());
+        Object o = Array.newInstance(clazz.getComponentType(), list.size());
 
-        for (int ii = 0; ii < list.tagCount(); ii++)
+        for (int ii = 0; ii < list.size(); ii++)
         {
-            NBTTagCompound tag2 = (NBTTagCompound) list.get(ii);
+            CompoundNBT tag2 = (CompoundNBT) list.get(ii);
 
-            int index = tag2.getInteger("index");
+            int index = tag2.getInt("index");
 
-            if (!tag2.hasKey("value"))
+            if (!tag2.contains("value"))
             {
                 continue;
             }
 
             Class<?> cls = Class.forName(tag2.getString("valueClass"));
-            Object value = NBTSerializer.deserializeToField(tag2, "value", cls, null);
+            Object value = NBTSerializer.deserializeFrom(tag2, "value", cls, null);
 
             if (cls == Byte.class || cls == byte.class)
             {
